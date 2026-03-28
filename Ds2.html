@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Group - AKAN System</title>
+    <style>
+        body { background-color: #f8e7d3; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* Navigation & Recherche */
+        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .search-input { flex-grow: 1; }
+
+        /* Profil & Inscription */
+        .profile-card { background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid orange; text-align: center; }
+        .logout-btn { background: #ff4444; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-left: 10px; }
+
+        /* Résultats de recherche */
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fafafa; }
+        
+        /* Fenêtre de Chat */
+        #chatWindow { display: none; flex-direction: column; border: 2px solid orange; border-radius: 10px; height: 400px; margin-top: 20px; background: white; }
+        .chat-header { background: orange; color: white; padding: 10px; font-weight: bold; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; background: #fdfdfd; display: flex; flex-direction: column; }
+        
+        /* Bulles de message */
+        .msg { padding: 10px; margin: 5px; border-radius: 10px; max-width: 80%; position: relative; background: #e1ffc7; align-self: flex-end; border: 1px solid #c1e1a6; }
+        .msg-options { cursor: pointer; font-weight: bold; margin-left: 10px; color: #666; }
+        .menu-popup { display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 100; }
+        .menu-popup button { display: block; width: 100%; border: none; background: none; padding: 5px 10px; cursor: pointer; text-align: left; }
+        .menu-popup button:hover { background: #f0f0f0; }
+
+        /* Barre d'outils Chat */
+        .chat-tools { display: flex; gap: 5px; padding: 10px; background: #eee; align-items: center; }
+        .btn-audio.active { background: red; color: white; }
+    </style>
+</head>
+<body bgcolor="#f8e7d3">
+
+    <center><h1><font color=Green><u>Chat Group</u></font></h1></center>
+    <hr><br>
+
+    <div class="container">
+        <div class="nav-bar">
+            <input type="text" id="searchBox" class="search-input" placeholder="Rechercher nom ou AKAN...">
+            <button onclick="searchUser()" style="background:orange; font-weight:bold;">OK</button>
+        </div>
+
+        <div id="authArea">
+            <div class="profile-card">
+                <h3>Créer un compte AKAN</h3>
+                <input type="text" id="nameInput" placeholder="Votre Nom">
+                <select id="countryInput">
+                    <option value="Chine">Chine</option>
+                    <option value="France">France</option>
+                    <option value="Arabe">Arabe</option>
+                    <option value="Afrique">Afrique</option>
+<option value="USA">USA</option>
+<option value="UK">UK</option>
+<option value="Pays-Bas">Pays-Bas</option>
+<option value="Espagne">Espagne</option>
+<option value="Allemagne">Allemagne</option>
+                </select>
+                <button onclick="registerUser()">Créer un AKAN numéro</button>
+            </div>
+        </div>
+        
+        <div id="profileArea" style="display:none;" class="profile-card">
+            <span id="welcomeText"></span>
+            <button class="logout-btn" onclick="logout()">Déconnecter</button>
+        </div>
+
+        <div id="resultsArea"></div>
+
+        <div id="chatWindow">
+            <div class="chat-header" id="chatTitle">Discussion</div>
+            <div class="chat-messages" id="chatMsgs"></div>
+            <div class="chat-tools">
+                <button onclick="document.getElementById('fileUp').click()">📎</button>
+                <input type="file" id="fileUp" style="display:none" onchange="handleFile(this)">
+                <button id="micBtn" class="btn-audio" onclick="toggleAudio()">Mc</button>
+                <input type="text" id="msgInput" style="flex-grow:1" placeholder="Ecrire...">
+                <button onclick="sendMsg()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GESTION DES DONNÉES ---
+        let allUsers = JSON.parse(localStorage.getItem('usersList')) || [];
+        let loggedUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+
+        function updateUI() {
+            if(loggedUser) {
+                document.getElementById('authArea').style.display = 'none';
+                document.getElementById('profileArea').style.display = 'block';
+                document.getElementById('welcomeText').innerText = `Nom: ${loggedUser.name} | AKAN: ${loggedUser.akan}`;
+            } else {
+                document.getElementById('authArea').style.display = 'block';
+                document.getElementById('profileArea').style.display = 'none';
+            }
+        }
+        updateUI();
+
+        function registerUser() {
+            const name = document.getElementById('nameInput').value;
+            const country = document.getElementById('countryInput').value;
+            if(!name) return alert("Entrez un nom");
+
+            const akan = Math.floor(10000000 + Math.random() * 90000000);
+            const user = { name, country, akan };
+            
+            allUsers.push(user);
+            loggedUser = user;
+            
+            localStorage.setItem('usersList', JSON.stringify(allUsers));
+            localStorage.setItem('currentUser', JSON.stringify(loggedUser));
+            updateUI();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            location.reload();
+        }
+
+        // --- RECHERCHE ---
+        function searchUser() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = "";
+
+            if(!query) return alert("Entrez un nom ou numéro");
+
+            const found = allUsers.filter(u => u.name.toLowerCase().includes(query) || u.akan.toString().includes(query));
+
+            if(found.length === 0) {
+                resultsArea.innerHTML = "<p>Aucun utilisateur trouvé.</p>";
+            } else {
+                found.forEach(u => {
+                    resultsArea.innerHTML += `
+                        <div class="user-item">
+                            <span><b>${u.name}</b> (${u.country}) - AKAN: ${u.akan}</span>
+                            <button onclick="openChat('${u.name}')">Communiquer</button>
+                        </div>`;
+                });
+            }
+        }
+
+        // --- CHAT ---
+        function openChat(name) {
+            document.getElementById('chatWindow').style.display = 'flex';
+            document.getElementById('chatTitle').innerText = "Chat avec " + name;
+        }
+
+        function sendMsg() {
+            const text = document.getElementById('msgInput').value;
+            if(!text) return;
+            addBubble(text);
+            document.getElementById('msgInput').value = "";
+        }
+
+        function addBubble(content) {
+            const id = Date.now();
+            const html = `
+                <div class="msg" id="m-${id}">
+                    <span class="msg-options" onclick="togglePopup('${id}')">...</span>
+                    <div class="menu-popup" id="p-${id}">
+                        <button onclick="editMsg('${id}')">Modifier</button>
+                        <button onclick="deleteMsg('${id}')" style="color:red">Supprimer</button>
+                    </div>
+                    <div class="text">${content}</div>
+                    <small style="display:block; font-size:9px; color:blue">Vu</small>
+                </div>`;
+            const area = document.getElementById('chatMsgs');
+            area.innerHTML += html;
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function togglePopup(id) {
+            const p = document.getElementById('p-'+id);
+            p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function deleteMsg(id) { document.getElementById('m-'+id).remove(); }
+
+        function editMsg(id) {
+            const div = document.getElementById('m-'+id).querySelector('.text');
+            const newText = prompt("Modifier le message :", div.innerText);
+            if(newText) div.innerText = newText;
+            document.getElementById('p-'+id).style.display = 'none';
+        }
+
+        function handleFile(input) {
+            if(input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = input.files[0].type.includes('image') ? 
+                        `<img src="${e.target.result}" style="max-width:100px">` : `📄 ${input.files[0].name}`;
+                    addBubble(content);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        let recording = false;
+        function toggleAudio() {
+            const btn = document.getElementById('micBtn');
+            if(!recording) {
+                alert("Notification : Activer le micro ?");
+                btn.classList.add('active');
+                recording = true;
+            } else {
+                btn.classList.remove('active');
+                recording = false;
+                addBubble("🎤 Message vocal enregistré");
+            }
+        }
+    </script>
+</body>
+</html>

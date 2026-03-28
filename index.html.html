@@ -1,0 +1,40 @@
+<html>
+<head>
+<title>The AKAN</title>
+</head>
+<body bgcolor=#dbe3e9>
+<center><h1><font color=red><u>The AKAN</u></font></center><hr><br>
+<center>
+    <font size=4>Code:  
+        <input type=password id="zoneCode" maxlength=8 size=20 placeholder=Enter...>
+       </font><br><br>
+<a href=Cds2.html><img src=tswr2cht.png height=50></a><br>
+<a href=vrifro.html>Opinion</a> | <a href=signa.html>Sign in</a>
+</center>
+
+<script>
+    // Sélection du champ de saisie
+    const champ = document.getElementById('zoneCode');
+
+    // Fonction pour l'oeil (afficher le mot de passe)
+    function voir() {
+        champ.type = (champ.type === "password") ? "text" : "password";
+    }
+
+    // Détection automatique du code
+    champ.addEventListener('input', function() {
+        // Nettoie les espaces et met en minuscule pour correspondre à ton image
+        let saisie = this.value.trim().toLowerCase();
+
+        // Correspondance des pages selon ton image
+        if (saisie === "m7m#gj@n") {
+            window.location.href = "Ds1.Html";
+        } else if (saisie === "tLm11d/@") {
+            window.location.href = "Ds5.Html";
+        } else if (saisie === "Xi/br@2x") {
+            window.location.href = "Ds3.Html";
+        }
+    });
+</script>
+</body>
+</html>
